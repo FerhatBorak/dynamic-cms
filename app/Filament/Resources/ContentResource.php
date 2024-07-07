@@ -153,12 +153,10 @@ class ContentResource extends Resource
         }
 
         return $baseField
-            ->label($field->label ?? $field->name)
-            ->placeholder($field->placeholder)
-            ->helperText($field->help_text)
+            ->label($field->label)
+            ->placeholder($field->placeholder ?? '')
+            ->helperText($field->help_text ?? '')
             ->required($field->is_required)
-            ->unique($field->is_unique)
-            ->default($field->default_value)
             ->rules($field->validation_rules ?? [])
             ->when(
                 $field->fieldType->slug === 'number',

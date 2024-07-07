@@ -3,7 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CategoryFieldResource\Pages;
+use App\Filament\Resources\CategoryFieldResource\RelationManagers\TranslationsRelationManager;
 use App\Filament\Resources\CategoryResource\Pages\ManageCategoryFields;
+use App\Filament\Resources\CategoryResource\Pages\ManageCategoryFieldsRelation;
 use App\Models\CategoryField;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Symfony\Component\Translation\Reader\TranslationReader;
 
 class CategoryFieldResource extends Resource
 {
@@ -30,6 +33,20 @@ class CategoryFieldResource extends Resource
                     ->required()
                     ->reactive()
                     ->afterStateUpdated(fn (callable $set) => $set('options', null)),
+                    Forms\Components\Tabs::make('Translations')
+                    ->tabs(
+                        array_map(function ($locale) {
+                            return Forms\Components\Tabs\Tab::make($locale)
+                                ->schema([
+                                    Forms\Components\TextInput::make("translations.{$locale}.label")
+                                        ->label('Etiket'),
+                                    Forms\Components\TextInput::make("translations.{$locale}.placeholder")
+                                        ->label('Yer Tutucu'),
+                                    Forms\Components\Textarea::make("translations.{$locale}.help_text")
+                                        ->label('Yardım Metni'),
+                                ]);
+                        }, $locales)
+                    ),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
@@ -109,7 +126,13 @@ class CategoryFieldResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ManageCategoryFields::route('/'),
+            'index' => ManageCategoryFieldsRelation::route('/'),
+        ];
+    }
+    public static function getRelations(): array
+    {
+        return [
+            TranslationsRelationManager::class,
         ];
     }
 }

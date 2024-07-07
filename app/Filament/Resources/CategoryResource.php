@@ -51,8 +51,8 @@ class CategoryResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('fields')
-                    ->url(fn (Category $record): string => route('filament.admin.resources.categories.fields', $record))
-                    ->icon('heroicon-o-rectangle-stack')
+                ->url(fn (Category $record): string => static::getUrl('manage-fields', ['record' => $record]))
+                ->icon('heroicon-o-rectangle-stack')
                     ->label('Manage Fields'),
             ])
             ->bulkActions([

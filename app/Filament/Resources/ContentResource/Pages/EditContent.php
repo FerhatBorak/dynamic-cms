@@ -19,16 +19,14 @@ class EditContent extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['category_id'] = $this->record->category_id;
+        $data['fields'] = $this->record->fields;
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Ensure that the 'fields' key exists in the data
-        if (!isset($data['fields'])) {
-            $data['fields'] = [];
-        }
+        // Ensure fields are properly formatted
+        $data['fields'] = is_array($data['fields']) ? $data['fields'] : [];
         return $data;
     }
 }

@@ -21,4 +21,8 @@ class Category extends Model
     {
         return $this->hasMany(Content::class);
     }
+    public function fieldGroups()
+    {
+        return $this->hasMany(CategoryFieldGroup::class);
+    }
 }

@@ -6,17 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::create('content_versions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('content_id')->constrained()->onDelete('cascade');
             $table->json('data');
-            $table->timestamps();
+            $table->unsignedInteger('version');
+            $table->timestamp('created_at');
+            $table->foreignId('created_by')->constrained('users');
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('content_versions');
     }
