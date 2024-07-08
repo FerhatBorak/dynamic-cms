@@ -6,9 +6,6 @@ use App\Filament\Resources\CategoryResource;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Forms;
 use Filament\Tables;
-use Filament\Forms\Form;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
@@ -20,8 +17,7 @@ class ManageCategoryFieldsRelation extends ManageRelatedRecords
 
     protected static ?string $navigationLabel = 'Manage Fields';
 
-
-    public function form(Form $form): Form
+    public function form(Forms\Form $form): Forms\Form
     {
         return $form
             ->schema([
@@ -40,8 +36,6 @@ class ManageCategoryFieldsRelation extends ManageRelatedRecords
                     ->maxLength(255),
                 Forms\Components\TextInput::make('label')
                     ->maxLength(255),
-                Forms\Components\TextInput::make('placeholder')
-                    ->maxLength(255),
                 Forms\Components\Textarea::make('help_text')
                     ->maxLength(65535),
                 Forms\Components\Toggle::make('is_required')
@@ -50,26 +44,20 @@ class ManageCategoryFieldsRelation extends ManageRelatedRecords
                     ->required(),
                 Forms\Components\TextInput::make('min')
                     ->numeric()
-                    ->visible(function (callable $get) {
-                        $fieldType = $get('field_type_id');
-                        return in_array($fieldType, [2, 4]); // Assuming 2 is for number and 4 is for date
-                    }),
+                    ->visible(fn (callable $get) => in_array($get('field_type_id'), [4, 5])),
                 Forms\Components\TextInput::make('max')
                     ->numeric()
-                    ->visible(function (callable $get) {
-                        $fieldType = $get('field_type_id');
-                        return in_array($fieldType, [2, 4]); // Assuming 2 is for number and 4 is for date
-                    }),
+                    ->visible(fn (callable $get) => in_array($get('field_type_id'), [4, 5])),
                 Forms\Components\TextInput::make('step')
                     ->numeric()
-                    ->visible(function (callable $get) {
-                        return $get('field_type_id') == 2; // Assuming 2 is for number
-                    }),
+                    ->visible(fn (callable $get) => $get('field_type_id') == 4),
+                Forms\Components\TagsInput::make('allowed_file_types')
+                    ->visible(fn (callable $get) => $get('field_type_id') == 8),
+                Forms\Components\TextInput::make('max_file_size')
+                    ->numeric()
+                    ->visible(fn (callable $get) => $get('field_type_id') == 8),
                 Forms\Components\KeyValue::make('options')
-                    ->visible(function (callable $get) {
-                        $fieldType = $get('field_type_id');
-                        return in_array($fieldType, [5, 6]); // Assuming 5 is for select and 6 is for checkbox
-                    }),
+                    ->visible(fn (callable $get) => in_array($get('field_type_id'), [6, 7])),
                 Forms\Components\TextInput::make('default_value')
                     ->maxLength(255),
                 Forms\Components\KeyValue::make('validation_rules'),
@@ -79,7 +67,7 @@ class ManageCategoryFieldsRelation extends ManageRelatedRecords
             ]);
     }
 
-    public function table(Table $table): Table
+    public function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([

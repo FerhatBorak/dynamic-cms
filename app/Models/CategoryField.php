@@ -41,6 +41,7 @@ class CategoryField extends Model
         'is_unique' => 'boolean',
         'options' => 'array',
         'validation_rules' => 'array',
+        'allowed_file_types' => 'array',
         'min_date' => 'date',
         'max_date' => 'date',
     ];
