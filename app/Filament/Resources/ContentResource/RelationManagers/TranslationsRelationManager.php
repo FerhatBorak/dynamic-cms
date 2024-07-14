@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\CategoryFieldResource\RelationManagers;
+namespace App\Filament\Resources\ContentResource;
 
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TranslationsRelationManager extends RelationManager
 {
@@ -16,15 +18,13 @@ class TranslationsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('locale')
+                Forms\Components\TextInput::make('title')
                     ->required()
-                    ->maxLength(5),
-                Forms\Components\TextInput::make('label')
                     ->maxLength(255),
-                Forms\Components\TextInput::make('placeholder')
+                Forms\Components\TextInput::make('slug')
+                    ->required()
                     ->maxLength(255),
-                Forms\Components\Textarea::make('help_text')
-                    ->maxLength(65535),
+                Forms\Components\KeyValue::make('fields'),
             ]);
     }
 
@@ -33,8 +33,8 @@ class TranslationsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('locale'),
-                Tables\Columns\TextColumn::make('label'),
-                Tables\Columns\TextColumn::make('placeholder'),
+                Tables\Columns\TextColumn::make('title'),
+                Tables\Columns\TextColumn::make('slug'),
             ])
             ->filters([
                 //

@@ -5,16 +5,17 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ContentResource\Pages;
 use App\Models\Content;
 use App\Models\Category;
-use App\Models\CategoryField;
+use App\Models\Language;
+use App\Models\ContentTranslation;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
+use Illuminate\Validation\Rules\Unique;
+use Filament\Facades\Filament;
+use Closure;
 
 class ContentResource extends Resource
 {
@@ -24,31 +25,97 @@ class ContentResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $categoryId = request()->query('category') ?? session('content_category_id') ?? $form->getRecord()?->category_id;
+
+        if (!$categoryId) {
+            return $form->schema([
+                Forms\Components\TextInput::make('error')
+                    ->label('Error')
+                    ->default('Invalid or missing category ID.')
+                    ->disabled(),
+            ]);
+        }
+
+        session(['content_category_id' => $categoryId]);
+
+        $category = Category::findOrFail($categoryId);
+        $languages = Language::where('is_active', true)->get();
+        $defaultLanguage = $languages->first();
+
         return $form
             ->schema([
+                Forms\Components\Hidden::make('id'),
                 Forms\Components\Hidden::make('category_id')
-                    ->default(fn (Get $get) => $get('category_id') ?? request()->query('category')),
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                        if (! $get('is_slug_changed_manually') && filled($state)) {
-                            $set('slug', Str::slug($state));
-                        }
-                    }),
-                Forms\Components\TextInput::make('slug')
-                    ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(fn (Set $set) => $set('is_slug_changed_manually', true)),
-                Forms\Components\Hidden::make('is_slug_changed_manually')
-                    ->default(false),
-                Forms\Components\Section::make('Dynamic Fields')
-                    ->schema(fn (Get $get): array => self::getDynamicFields($get('category_id')))
-                    ->columns(2)
-                    ->collapsible(),
-            ]);
+                    ->default($categoryId)
+                    ->required(),
+                Forms\Components\Tabs::make('Translations')
+                    ->tabs(
+                        $languages->map(function ($language) use ($category, $defaultLanguage) {
+                            return Forms\Components\Tabs\Tab::make($language->name)
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make("translations.{$language->code}.title")
+                                                ->label('Title')
+                                                ->required()
+                                                ->live(onBlur: true)
+                                                ->afterStateUpdated(function (string $state, Forms\Set $set) use ($language) {
+                                                    $set("translations.{$language->code}.slug", Str::slug($state));
+                                                })
+                                                ->rules(['required', 'string', 'max:255']),
+                                            Forms\Components\TextInput::make("translations.{$language->code}.slug")
+                                                ->label('Slug')
+                                                ->required()
+                                                ->rules(fn () => static::getSlugValidationRule($language)),
+                                        ]),
+                                    Forms\Components\Section::make('İçerik')
+                                        ->schema(self::getDynamicFields($category->id, $language->code))
+                                        ->columns(12),
+                                    Forms\Components\Actions::make([
+                                        Forms\Components\Actions\Action::make('copyFromDefaultLanguage')
+                                            ->label('Copy from Default Language')
+                                            ->action(function (Forms\Set $set, Forms\Get $get) use ($language, $defaultLanguage, $category) {
+                                                $defaultContent = $get("translations.{$defaultLanguage->code}");
+                                                if ($defaultContent) {
+                                                    $set("translations.{$language->code}.title", $defaultContent['title'] ?? '');
+                                                    $set("translations.{$language->code}.slug", $defaultContent['slug'] ?? '');
+                                                    foreach ($category->fields as $field) {
+                                                        $set("translations.{$language->code}.fields.{$field->slug}", $defaultContent['fields'][$field->slug] ?? '');
+                                                    }
+                                                }
+                                            })
+                                            ->visible($language->code !== $defaultLanguage->code),
+                                    ]),
+                                ]);
+                        })->toArray()
+                    )
+                    ->columnSpanFull(),
+            ])
+            ->statePath('data');
+    }
+
+    protected static function getSlugValidationRule($language): array
+    {
+        return [
+            'required',
+            'string',
+            'max:255',
+            function (string $attribute, $value, Closure $fail) use ($language) {
+                return function () use ($attribute, $value, $fail, $language) {
+                    $rule = Unique::for(ContentTranslation::class)
+                        ->where('locale', $language->code);
+
+                    $record = Filament::getCurrentResource()::getRecord();
+                    if ($record) {
+                        $rule->ignore($record->getKey(), 'content_id');
+                    }
+
+                    if (!$rule->passes($attribute, $value)) {
+                        $fail("The slug has already been taken for this language.");
+                    }
+                };
+            },
+        ];
     }
 
     public static function table(Table $table): Table
@@ -56,28 +123,18 @@ class ContentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('category.name')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('title')
-                    ->sortable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('translations.title')
+                    ->label('Title')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->relationship('category', 'name'),
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -102,30 +159,18 @@ class ContentResource extends Resource
         ];
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->when(request()->has('category'), function ($query) {
-                $query->where('category_id', request()->query('category'));
-            });
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return false;
-    }
-
-    protected static function getDynamicFields($categoryId): array
+    protected static function getDynamicFields($categoryId, $languageCode): array
     {
         if (!$categoryId) {
             return [];
         }
 
-        $fields = [];
-        $categoryFields = CategoryField::where('category_id', $categoryId)->get();
+        $category = Category::find($categoryId);
+        $categoryFields = $category ? $category->fields : collect();
 
+        $fields = [];
         foreach ($categoryFields as $field) {
-            $fieldComponent = self::getFieldComponent($field);
+            $fieldComponent = self::getFieldComponent($field, $languageCode);
             if ($fieldComponent) {
                 $fields[] = $fieldComponent;
             }
@@ -134,17 +179,17 @@ class ContentResource extends Resource
         return $fields;
     }
 
-    protected static function getFieldComponent(CategoryField $field)
+    protected static function getFieldComponent($field, $languageCode)
     {
         $baseField = match ($field->fieldType->slug) {
-            'text' => Forms\Components\TextInput::make("fields.{$field->slug}"),
-            'textarea' => Forms\Components\Textarea::make("fields.{$field->slug}"),
-            'rich_text' => Forms\Components\RichEditor::make("fields.{$field->slug}"),
-            'number' => Forms\Components\TextInput::make("fields.{$field->slug}")->numeric(),
-            'date' => Forms\Components\DatePicker::make("fields.{$field->slug}"),
-            'select' => Forms\Components\Select::make("fields.{$field->slug}")->options($field->options ?? []),
-            'checkbox' => Forms\Components\Checkbox::make("fields.{$field->slug}"),
-            'file' => Forms\Components\FileUpload::make("fields.{$field->slug}"),
+            'text' => Forms\Components\TextInput::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'textarea' => Forms\Components\Textarea::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'rich_text' => Forms\Components\RichEditor::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'number' => Forms\Components\TextInput::make("translations.{$languageCode}.fields.{$field->slug}")->numeric(),
+            'date' => Forms\Components\DatePicker::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'select' => Forms\Components\Select::make("translations.{$languageCode}.fields.{$field->slug}")->options($field->type_specific_config['options'] ?? []),
+            'checkbox' => Forms\Components\Checkbox::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'file' => Forms\Components\FileUpload::make("translations.{$languageCode}.fields.{$field->slug}"),
             default => null,
         };
 
@@ -152,18 +197,69 @@ class ContentResource extends Resource
             return null;
         }
 
-        return $baseField
+        $baseField = $baseField
             ->label($field->label)
-            ->placeholder($field->placeholder ?? '')
             ->helperText($field->help_text ?? '')
             ->required($field->is_required)
-            ->rules($field->validation_rules ?? [])
-            ->when(
-                $field->fieldType->slug === 'number',
-                fn ($component) => $component
-                    ->min($field->min)
-                    ->max($field->max)
-                    ->step($field->step)
-            );
+            ->default(fn ($record) => $record ? $record->getTranslation($languageCode)->fields[$field->slug] ?? '' : '')
+            ->columnSpan($field->column_span ?? 12);
+
+        if (method_exists($baseField, 'placeholder')) {
+            $baseField = $baseField->placeholder($field->placeholder ?? '');
+        }
+
+        $rules = $field->validation_rules ?? [];
+        if ($field->type_specific_config) {
+            switch ($field->fieldType->slug) {
+                case 'text':
+                case 'textarea':
+                case 'rich_text':
+                    if (isset($field->type_specific_config['min_length'])) {
+                        $rules[] = "min:{$field->type_specific_config['min_length']}";
+                    }
+                    if (isset($field->type_specific_config['max_length'])) {
+                        $rules[] = "max:{$field->type_specific_config['max_length']}";
+                    }
+                    break;
+                case 'number':
+                    if (isset($field->type_specific_config['min'])) {
+                        $rules[] = "min:{$field->type_specific_config['min']}";
+                        $baseField = $baseField->minValue($field->type_specific_config['min']);
+                    }
+                    if (isset($field->type_specific_config['max'])) {
+                        $rules[] = "max:{$field->type_specific_config['max']}";
+                        $baseField = $baseField->maxValue($field->type_specific_config['max']);
+                    }
+                    if (isset($field->type_specific_config['step'])) {
+                        $baseField = $baseField->step($field->type_specific_config['step']);
+                    }
+                    break;
+                case 'date':
+                    if (isset($field->type_specific_config['min_date'])) {
+                        $baseField = $baseField->minDate($field->type_specific_config['min_date']);
+                    }
+                    if (isset($field->type_specific_config['max_date'])) {
+                        $baseField = $baseField->maxDate($field->type_specific_config['max_date']);
+                    }
+                    break;
+                case 'file':
+                    if (isset($field->type_specific_config['allowed_file_types'])) {
+                        $baseField = $baseField->acceptedFileTypes($field->type_specific_config['allowed_file_types']);
+                    }
+                    if (isset($field->type_specific_config['max_file_size'])) {
+                        $baseField = $baseField->maxSize($field->type_specific_config['max_file_size']);
+                    }
+                    break;
+            }
+        }
+
+        $baseField = $baseField->rules($rules);
+
+        return $baseField;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 }

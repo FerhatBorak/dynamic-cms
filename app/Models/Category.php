@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
@@ -12,17 +11,26 @@ class Category extends Model
 
     protected $fillable = ['name', 'slug', 'description'];
 
-    public function fields(): HasMany
+    public function translations()
+    {
+        return $this->hasMany(CategoryTranslation::class);
+    }
+
+    public function fields()
     {
         return $this->hasMany(CategoryField::class);
     }
 
-    public function contents(): HasMany
+    protected static function boot()
     {
-        return $this->hasMany(Content::class);
-    }
-    public function fieldGroups()
-    {
-        return $this->hasMany(CategoryFieldGroup::class);
+        parent::boot();
+
+        static::saving(function ($category) {
+            \Log::info('Saving Category:', $category->toArray());
+        });
+
+        static::saved(function ($category) {
+            \Log::info('Saved Category:', $category->toArray());
+        });
     }
 }

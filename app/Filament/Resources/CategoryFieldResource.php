@@ -33,20 +33,6 @@ class CategoryFieldResource extends Resource
                     ->required()
                     ->reactive()
                     ->afterStateUpdated(fn (callable $set) => $set('options', null)),
-                    Forms\Components\Tabs::make('Translations')
-                    ->tabs(
-                        array_map(function ($locale) {
-                            return Forms\Components\Tabs\Tab::make($locale)
-                                ->schema([
-                                    Forms\Components\TextInput::make("translations.{$locale}.label")
-                                        ->label('Etiket'),
-                                    Forms\Components\TextInput::make("translations.{$locale}.placeholder")
-                                        ->label('Yer Tutucu'),
-                                    Forms\Components\Textarea::make("translations.{$locale}.help_text")
-                                        ->label('Yardım Metni'),
-                                ]);
-                        }, $locales)
-                    ),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
@@ -93,9 +79,15 @@ class CategoryFieldResource extends Resource
                 Forms\Components\TextInput::make('order')
                     ->integer()
                     ->default(0),
+                    Forms\Components\Section::make('Advanced Options')
+                    ->schema(fn (Get $get): array => static::getAdvancedFieldOptions($get('field_type_id')))
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed()
+                    ->visible(fn (Get $get): bool => $get('field_type_id') !== null),
             ]);
-    }
 
+    }
     public static function table(Table $table): Table
     {
         return $table
@@ -119,20 +111,21 @@ class CategoryFieldResource extends Resource
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return false;
-    }
-    public static function getPages(): array
-    {
-        return [
-            'index' => ManageCategoryFieldsRelation::route('/'),
-        ];
-    }
+
     public static function getRelations(): array
     {
         return [
-            TranslationsRelationManager::class,
         ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+        ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 }

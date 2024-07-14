@@ -11,9 +11,8 @@ return new class extends Migration
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
-            $table->string('title');
-            $table->string('slug')->unique();
             $table->json('fields')->nullable();
+            $table->json('data')->nullable();
             $table->enum('status', ['draft', 'published', 'scheduled'])->default('draft');
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

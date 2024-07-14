@@ -82,7 +82,13 @@ return [
     | Livewire's standard 200ms delay.
     |
     */
-
+    'plugins' => [
+    \Filament\SpatieLaravelMediaLibraryPlugin::class,
+    // ...
+],
+    'icons' => [
+        'sets' => ['heroicons', 'blade-flags'],
+    ],
     'livewire_loading_delay' => 'default',
     'panels' => [
     'admin' => [

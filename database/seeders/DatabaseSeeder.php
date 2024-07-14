@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             FieldTypeSeeder::class,
+            LanguageSeeder::class,
         ]);
     }
 }

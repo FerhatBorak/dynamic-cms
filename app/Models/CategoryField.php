@@ -16,36 +16,22 @@ class CategoryField extends Model
         'slug',
         'label',
         'placeholder',
-        'min_length',
-        'max_length',
-        'rows',
-        'min',
-        'max',
-        'step',
-        'min_date',
-        'max_date',
-        'options',
-        'allowed_file_types',
-        'max_file_size',
         'help_text',
-        'default_value',
         'is_required',
         'is_unique',
-        'default_value',
         'validation_rules',
         'order',
+        'type_specific_config',
+        'column_span',
     ];
 
     protected $casts = [
         'is_required' => 'boolean',
         'is_unique' => 'boolean',
-        'options' => 'array',
         'validation_rules' => 'array',
-        'allowed_file_types' => 'array',
-        'min_date' => 'date',
-        'max_date' => 'date',
+        'type_specific_config' => 'array',
+        'column_span' =>'integer'
     ];
-
 
     public function category()
     {
@@ -55,18 +41,5 @@ class CategoryField extends Model
     public function fieldType()
     {
         return $this->belongsTo(FieldType::class);
-    }
-    public function group() {
-        return $this->belongsTo(CategoryFieldGroup::class,'group_id');
-    }
-    public function translations()
-    {
-        return $this->hasMany(CategoryFieldTranslation::class);
-    }
-
-    public function getTranslation($locale)
-    {
-
-        return $this->translations()->where('locale', $locale)->first();
     }
 }

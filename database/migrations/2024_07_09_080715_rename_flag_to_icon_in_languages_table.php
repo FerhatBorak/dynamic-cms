@@ -8,16 +8,15 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('field_templates', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->json('fields');
-            $table->timestamps();
+        Schema::table('languages', function (Blueprint $table) {
+            $table->renameColumn('flag', 'icon');
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('field_templates');
+        Schema::table('languages', function (Blueprint $table) {
+            $table->renameColumn('icon', 'flag');
+        });
     }
 };

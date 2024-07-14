@@ -6,21 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up()
     {
         Schema::create('content_translations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('content_id')->constrained()->onDelete('cascade');
-            $table->string('locale', 5);
+            $table->string('locale');
             $table->string('title');
-            $table->text('content');
+            $table->string('slug')->nullable();
             $table->json('fields')->nullable();
-            $table->unique(['content_id', 'locale']);
             $table->timestamps();
+
+            $table->unique(['content_id', 'locale']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('content_translations');
     }

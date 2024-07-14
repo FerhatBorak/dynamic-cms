@@ -9,18 +9,18 @@ class ContentTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['content_id', 'locale', 'title', 'content', 'fields'];
+    protected $fillable = ['content_id', 'locale', 'title', 'slug', 'fields'];
 
     protected $casts = [
         'fields' => 'array',
     ];
+    public function getTable()
+{
+    return 'content_translations';
+}
 
     public function content()
     {
         return $this->belongsTo(Content::class);
     }
-    public function fields()
-{
-    return $this->hasMany(ContentTranslationField::class);
-}
 }

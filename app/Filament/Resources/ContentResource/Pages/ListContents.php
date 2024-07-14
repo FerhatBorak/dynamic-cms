@@ -7,15 +7,22 @@ use App\Models\Category;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
+
+
 class ListContents extends ListRecords
 {
     protected static string $resource = ContentResource::class;
 
     protected function getHeaderActions(): array
     {
+        $categoryId = request()->query('category');
+        if (!$categoryId || !Category::find($categoryId)) {
+            return [];
+        }
+
         return [
             Actions\CreateAction::make()
-                ->url(fn () => ContentResource::getUrl('create', ['category' => request()->query('category')])),
+                ->url(fn () => $this->getResource()::getUrl('create', ['category' => $categoryId])),
         ];
     }
 
