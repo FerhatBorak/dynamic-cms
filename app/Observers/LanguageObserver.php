@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Language;
 use App\Models\Category;
 use App\Models\Content;
+use App\Models\ContentTranslation;
 
 class LanguageObserver
 {
@@ -13,22 +14,27 @@ class LanguageObserver
         // Yeni dil eklendiğinde tüm kategoriler ve içerikler için çeviri oluştur
         Category::chunk(100, function ($categories) use ($language) {
             foreach ($categories as $category) {
+                $defaultTranslation = $category->translations()->where('locale', config('app.fallback_locale'))->first();
                 $category->translations()->create([
                     'locale' => $language->code,
-                    'name' => $category->name,
-                    'description' => $category->description,
+                    'name' => $defaultTranslation ? $defaultTranslation->name : $category->name,
+                    'description' => $defaultTranslation ? $defaultTranslation->description : '',
                 ]);
             }
         });
 
         Content::chunk(100, function ($contents) use ($language) {
             foreach ($contents as $content) {
-                $content->translations()->create([
-                    'locale' => $language->code,
-                    'title' => $content->getTranslation('title', config('app.fallback_locale')),
-                    'slug' => $content->getTranslation('slug', config('app.fallback_locale')),
-                    'fields' => $content->getTranslation('fields', config('app.fallback_locale')),
-                ]);
+                $defaultTranslation = $content->translations()->where('locale', config('app.fallback_locale'))->first();
+                if ($defaultTranslation) {
+                    ContentTranslation::create([
+                        'content_id' => $content->id,
+                        'locale' => $language->code,
+                        'title' => $defaultTranslation->title,
+                        'slug' => $defaultTranslation->slug,
+                        'fields' => $defaultTranslation->fields,
+                    ]);
+                }
             }
         });
     }

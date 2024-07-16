@@ -17,24 +17,7 @@ class CreateContent extends CreateRecord
     {
         $this->authorizeAccess();
 
-        $this->fillForm();
-
-        $this->previousUrl = url()->previous();
-    }
-
-    protected function mutateFormDataBeforeCreate(array $data): array
-    {
-        $categoryId = request()->query('category') ?? session('content_category_id');
-        if (!$categoryId) {
-            throw new \Exception('Category ID is required.');
-        }
-        $data['category_id'] = $categoryId;
-        return $data;
-    }
-
-    protected function beforeCreate(): void
-    {
-        $categoryId = request()->query('category') ?? session('content_category_id');
+        $categoryId = request()->query('category');
         if (!$categoryId || !Category::find($categoryId)) {
             Notification::make()
                 ->title('Error')
@@ -42,21 +25,25 @@ class CreateContent extends CreateRecord
                 ->danger()
                 ->send();
 
-            $this->halt();
+            $this->redirect(ContentResource::getUrl('index'));
         }
+
+        $this->form->fill([
+            'category_id' => $categoryId,
+        ]);
     }
 
-
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['category_id'] = $this->form->getState()['category_id'];
+        return $data;
+    }
 
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index', ['category' => $this->record->category_id]);
     }
 
-    protected function afterCreate(): void
-    {
-        session()->forget('content_category_id');
-    }
     protected function handleRecordCreation(array $data): Model
     {
         $content = Content::create([

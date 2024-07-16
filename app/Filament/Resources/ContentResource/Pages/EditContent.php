@@ -23,12 +23,10 @@ class EditContent extends EditRecord
     {
         Log::info('Updating record', ['data' => $data]);
 
-        // Mevcut kaydı güncelle
         $record->update([
             'category_id' => $data['category_id'],
         ]);
 
-        // Çevirileri güncelle
         foreach ($data['translations'] as $locale => $translationData) {
             $record->translations()->updateOrCreate(
                 ['locale' => $locale],
@@ -40,7 +38,7 @@ class EditContent extends EditRecord
             );
         }
 
-        Log::info('Record updated', ['record' => $record->toArray()]);
+        Log::info('Record updated', ['record' => $record->fresh()->toArray()]);
 
         return $record->fresh();
     }

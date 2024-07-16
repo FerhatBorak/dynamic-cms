@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class CategoryField extends Model
 {
@@ -41,5 +43,12 @@ class CategoryField extends Model
     public function fieldType()
     {
         return $this->belongsTo(FieldType::class);
+    }
+    protected static function boot()
+    {
+        parent::boot();
+        static::addGlobalScope('order', function (Builder $builder) {
+            $builder->orderBy('order');
+        });
     }
 }

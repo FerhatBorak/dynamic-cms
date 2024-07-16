@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
@@ -32,5 +33,9 @@ class Category extends Model
         static::saved(function ($category) {
             \Log::info('Saved Category:', $category->toArray());
         });
+    }
+    public function contents():HasMany
+    {
+        return $this->hasMany(Content::class);
     }
 }

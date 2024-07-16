@@ -6,8 +6,7 @@ use App\Filament\Resources\ContentResource;
 use App\Models\Category;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-
-
+use Illuminate\Database\Eloquent\Builder;
 
 class ListContents extends ListRecords
 {
@@ -26,9 +25,16 @@ class ListContents extends ListRecords
         ];
     }
 
-    protected function getRedirectUrl(): string
+    protected function getTableQuery(): Builder
     {
-        return $this->getResource()::getUrl('index', ['category' => request()->query('category')]);
+        $query = parent::getTableQuery();
+        $categoryId = request()->query('category');
+
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        return $query;
     }
 
     public function getTitle(): string
