@@ -39,23 +39,25 @@ class Content extends Model
     return 'contents';
 }
 
-    protected static function boot()
-    {
-        parent::boot();
+protected static function boot()
+{
+    parent::boot();
 
-        static::saving(function ($content) {
-            if (request()->has('translations')) {
-                $translations = request()->input('translations');
-                foreach ($translations as $locale => $data) {
-                    $content->translations()->updateOrCreate(
-                        ['locale' => $locale],
-                        [
-                            'title' => $data['title'],
-                            'fields' => $data['fields'] ?? [],
-                        ]
-                    );
-                }
+    static::saving(function ($content) {
+        if (request()->has('translations')) {
+            $translations = request()->input('translations');
+            foreach ($translations as $locale => $data) {
+                $fields = $data['fields'] ?? [];
+                $content->translations()->updateOrCreate(
+                    ['locale' => $locale],
+                    [
+                        'title' => $data['title'],
+                        'fields' => $fields,
+                    ]
+                );
             }
-        });
-    }
+        }
+    });
+}
+
 }

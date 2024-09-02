@@ -14,7 +14,7 @@ class CategoryController extends Controller
             abort(404);
         }
 
-        $contents = get_category_items($slug, 10, true); // 10 içerik per sayfa, sayfalama aktif
+        $contents = get_category_items($slug, 10, true);
 
         return view('category.show', compact('category', 'contents'));
     }

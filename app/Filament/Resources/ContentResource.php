@@ -140,10 +140,9 @@ class ContentResource extends Resource
             ->label($field->label),
             'checkbox' => Forms\Components\Checkbox::make("translations.{$languageCode}.fields.{$field->slug}"),
             'file' => Forms\Components\FileUpload::make("translations.{$languageCode}.fields.{$field->slug}")
-            ->disk('public')
-            ->directory('uploads/' . $field->category->slug)
-            ->visibility('public'),
-            default => null,
+                ->disk('public')
+                ->directory('uploads/' . $field->category->slug)
+                ->visibility('public'),
         };
 
         if (!$baseField) {

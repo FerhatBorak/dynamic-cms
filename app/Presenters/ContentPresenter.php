@@ -2,39 +2,49 @@
 
 namespace App\Presenters;
 
+use Illuminate\Support\Facades\Storage;
+
 class ContentPresenter
 {
     protected $content;
     protected $fields;
+    protected $translation;
 
     public function __construct($content)
     {
         $this->content = $content;
-        $this->fields = $content->translations->first()->fields ?? [];
+        $this->translation = $content->translations->first();
+        $this->fields = $this->translation->fields ?? [];
     }
 
     public function __get($name)
     {
         if (isset($this->fields[$name])) {
-            return $this->fields[$name];
+            return $this->getFieldValue($name, $this->fields[$name]);
         }
 
-        if (method_exists($this, $name)) {
-            return $this->$name();
+        if (isset($this->translation->$name)) {
+            return $this->translation->$name;
         }
 
-        return $this->content->$name;
+        if (isset($this->content->$name)) {
+            return $this->content->$name;
+        }
+
+        return null;
     }
 
-    public function title()
+    protected function getFieldValue($fieldName, $value)
     {
-        return $this->content->translations->first()->title ?? '';
+        if (is_string($value) && strpos($value, 'uploads/') === 0) {
+            return get_file_url($value);
+        }
+
+        return $value;
     }
 
-    public function slug()
+    public function getFields()
     {
-        return $this->content->translations->first()->slug ?? '';
+        return $this->fields;
     }
-
-    // Diğer ortak metodları burada tanımlayabilirsiniz
 }

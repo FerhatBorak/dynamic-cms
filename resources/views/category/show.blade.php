@@ -1,21 +1,20 @@
 @extends('layouts.app')
-
 @section('content')
-    <h1>{{ $category['name'] }}</h1>
+<h1>{{ $category['name'] }}</h1>
+<p>{{ $category['description'] }}</p>
 
-    @if($category['description'])
-        <p>{{ $category['description'] }}</p>
-    @endif
+@foreach($contents as $content)
+    <article>
+        <h2>{{ $content->title }}</h2>
 
-    <div class="category-contents">
-        @foreach(get_category_items('blog') as $item)
-        <h2>{{ $item->title }}</h2>
+            <img src="{{ $content->image }}" alt="{{ $content->title }}">
 
-       <a href="{{ url($item->slug) }}">Devamını oku</a></
-    @endforeach
-    </div>
+        @if(isset($content->body))
+            <p>{{ Str::limit($content->body, 150) }}</p>
+        @endif
+        <a href="{{ route('content.show', $content->slug) }}">Devamını oku</a>
+    </article>
+@endforeach
 
-    @if($contents instanceof \Illuminate\Pagination\LengthAwarePaginator)
-        {{ $contents->links() }}
-    @endif
+{{ $contents->links() }}
 @endsection

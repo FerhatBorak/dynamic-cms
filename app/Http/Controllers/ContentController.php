@@ -14,6 +14,6 @@ class ContentController extends Controller
             abort(404);
         }
 
-        return view('content.show', compact('content'));
+        return view('content.show', ['content' => $content]);
     }
 }
