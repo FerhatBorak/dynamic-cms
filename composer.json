@@ -28,9 +28,15 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
+            "Presenters\\": "app/presenters",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Helpers/LanguageHelper.php",
+            "app/Helpers/ContentHelper.php",
+            "app/Helpers/CategoryHelper.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

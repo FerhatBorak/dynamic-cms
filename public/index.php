@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Http\Request;
-
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: *");
 define('LARAVEL_START', microtime(true));
 
 // Determine if the application is in maintenance mode...

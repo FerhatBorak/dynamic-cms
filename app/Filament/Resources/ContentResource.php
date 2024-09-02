@@ -135,9 +135,14 @@ class ContentResource extends Resource
             'rich_text' => Forms\Components\RichEditor::make("translations.{$languageCode}.fields.{$field->slug}"),
             'number' => Forms\Components\TextInput::make("translations.{$languageCode}.fields.{$field->slug}")->numeric(),
             'date' => Forms\Components\DatePicker::make("translations.{$languageCode}.fields.{$field->slug}"),
-            'select' => Forms\Components\Select::make("translations.{$languageCode}.fields.{$field->slug}")->options($field->type_specific_config['options'] ?? []),
+            'select' => Forms\Components\Select::make("translations.{$languageCode}.fields.{$field->slug}")
+            ->options($field->type_specific_config['options'] ?? [])
+            ->label($field->label),
             'checkbox' => Forms\Components\Checkbox::make("translations.{$languageCode}.fields.{$field->slug}"),
-            'file' => Forms\Components\FileUpload::make("translations.{$languageCode}.fields.{$field->slug}"),
+            'file' => Forms\Components\FileUpload::make("translations.{$languageCode}.fields.{$field->slug}")
+            ->disk('public')
+            ->directory('uploads/' . $field->category->slug)
+            ->visibility('public'),
             default => null,
         };
 
@@ -146,10 +151,10 @@ class ContentResource extends Resource
         }
 
         return $baseField
-            ->label($field->label)
-            ->helperText($field->help_text ?? '')
-            ->required($field->is_required)
-            ->columnSpan($field->column_span ?? 12);
+        ->label($field->label)
+        ->helperText($field->help_text ?? '')
+        ->required($field->is_required)
+        ->columnSpan($field->column_span ?? 12);
     }
 
     public static function shouldRegisterNavigation(): bool

@@ -154,7 +154,20 @@ class CategoryResource extends Resource
             'edit' => Pages\EditCategory::route('/{record}/edit'),
         ];
     }
-
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        if (isset($data['fields'])) {
+            foreach ($data['fields'] as &$field) {
+                if (isset($field['type_specific_config']['options'])) {
+                    $field['type_specific_config']['options'] = array_combine(
+                        array_column($field['type_specific_config']['options'], 'key'),
+                        array_column($field['type_specific_config']['options'], 'value')
+                    );
+                }
+            }
+        }
+        return $data;
+    }
     protected static function getTypeSpecificFields($fieldTypeId): array
     {
         if (empty($fieldTypeId)) {
@@ -203,16 +216,26 @@ class CategoryResource extends Resource
 
         return $options;
     }
-    public static function mutateFormDataBeforeCreate(array $data): array
+
+    protected function afterSave()
 {
-    $defaultLanguage = Language::where('is_active', true)->first();
-    $defaultTranslation = $data['translations'][$defaultLanguage->code] ?? null;
+    $category = $this->record;
 
-    if ($defaultTranslation) {
-        $data['name'] = $defaultTranslation['name'];
-        $data['slug'] = $defaultTranslation['slug'];
+    if (isset($this->data['fields'])) {
+        foreach ($this->data['fields'] as $fieldData) {
+            if (isset($fieldData['type_specific_config']['options'])) {
+                $fieldData['type_specific_config']['options'] = array_combine(
+                    array_column($fieldData['type_specific_config']['options'], 'key'),
+                    array_column($fieldData['type_specific_config']['options'], 'value')
+                );
+            }
+
+            $category->fields()->updateOrCreate(
+                ['id' => $fieldData['id'] ?? null],
+                $fieldData
+            );
+        }
     }
-
-    return $data;
 }
+
 }
