@@ -88,12 +88,29 @@ class ContentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function (Content $record) {
+                        return redirect()->route('filament.resources.contents.create', ['category' => $record->category_id]);
+                    }),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->hasRole('editor')) {
+            $categoryIds = auth()->user()->categories->pluck('id');
+            $query->whereIn('category_id', $categoryIds);
+        }
+
+        return $query;
+    }
     public static function getRelations(): array
     {
         return [
