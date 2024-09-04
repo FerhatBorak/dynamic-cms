@@ -88,29 +88,12 @@ class ContentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->after(function (Content $record) {
-                        return redirect()->route('filament.resources.contents.create', ['category' => $record->category_id]);
-                    }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery();
-
-        if (auth()->user()->hasRole('editor')) {
-            $categoryIds = auth()->user()->categories->pluck('id');
-            $query->whereIn('category_id', $categoryIds);
-        }
-
-        return $query;
-    }
     public static function getRelations(): array
     {
         return [
@@ -142,6 +125,31 @@ class ContentResource extends Resource
         }
 
         return $fields;
+    }
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user() && auth()->user()->hasRole('content_editor')) {
+            $allowedCategories = auth()->user()->roles
+                ->flatMap(function ($role) {
+                    return $role->permissions;
+                })
+                ->pluck('name')
+                ->filter(function ($name) {
+                    return str_starts_with($name, 'edit_');
+                })
+                ->map(function ($name) {
+                    return str_replace('edit_', '', $name);
+                })
+                ->toArray();
+
+            $query->whereHas('category', function ($q) use ($allowedCategories) {
+                $q->whereIn('slug', $allowedCategories);
+            });
+        }
+
+        return $query;
     }
 
     protected static function getFieldComponent($field, $languageCode)

@@ -5,13 +5,18 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CategoryResource\Pages;
 use App\Models\Category;
 use App\Models\FieldType;
+
+use App\Models\Permission;
 use App\Models\Language;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Filament\Navigation\NavigationItem;
+
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Components\Tabs;
@@ -31,6 +36,56 @@ class CategoryResource extends Resource
 
         return $form
             ->schema([
+                Forms\Components\Select::make('copy_fields_from')
+                ->label('Alanları kopyala')
+                ->options(Category::pluck('name', 'id'))
+                ->reactive()
+                ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                    if ($state) {
+                        $sourceCategory = Category::with('fields')->find($state);
+                        if ($sourceCategory) {
+                            $fields = $sourceCategory->fields->map(function ($field) {
+                                return [
+                                    'field_type_id' => $field->field_type_id,
+                                    'name' => $field->name,
+                                    'slug' => $field->slug,
+                                    'label' => $field->label,
+                                    'is_required' => $field->is_required,
+                                    'validation_rules' => $field->validation_rules,
+                                    'order' => $field->order,
+                                    'type_specific_config' => $field->type_specific_config,
+                                ];
+                            })->toArray();
+
+                            $set('fields', $fields);
+                        }
+                    }
+                }),
+                Forms\Components\Checkbox::make('include_meta_fields')
+                ->label('Meta\'ları dahil et')
+                ->reactive()
+                ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                    if ($state) {
+                        $textFieldType = FieldType::where('slug', 'text')->first();
+                        $currentFields = $get('fields') ?? [];
+
+                        $metaKeywords = [
+                            'field_type_id' => $textFieldType->id,
+                            'name' => 'keyword',
+                            'slug' => 'keyword',
+                            'label' => 'Meta Keywords',
+                        ];
+
+                        $metaDescription = [
+                            'field_type_id' => $textFieldType->id,
+                            'name' => 'description',
+                            'slug' => 'description',
+                            'label' => 'Meta Description',
+                        ];
+
+                        $set('fields', array_merge($currentFields, [$metaKeywords, $metaDescription]));
+                    }
+                }),
                 Forms\Components\Hidden::make('name'),
                 Forms\Components\Hidden::make('slug'),
                 Forms\Components\Tabs::make('Category')
@@ -117,6 +172,7 @@ class CategoryResource extends Resource
             ]);
     }
 
+
     public static function table(Table $table): Table
     {
         return $table
@@ -140,6 +196,28 @@ class CategoryResource extends Resource
             ]);
     }
 
+    public static function getNavigationGroup(): ?string
+    {
+        return auth()->user()->hasRole('super_admin') ? 'Yönetim' : null;
+    }
+
+
+
+    public static function getNavigationItems(): array
+    {
+        $items = parent::getNavigationItems();
+
+        $categories = Category::all();
+
+        foreach ($categories as $category) {
+            $items[] = NavigationItem::make($category->name)
+                ->icon('heroicon-o-document-text')
+                ->group('İçerikler')
+                ->url(ContentResource::getUrl('index', ['category' => $category->id]));
+        }
+
+        return $items;
+    }
     public static function getRelations(): array
     {
         return [
@@ -216,7 +294,10 @@ class CategoryResource extends Resource
 
         return $options;
     }
-
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->hasRole('super_admin');
+    }
     protected function afterSave()
 {
     $category = $this->record;
@@ -237,5 +318,30 @@ class CategoryResource extends Resource
         }
     }
 }
+public static function afterCreate($record): void
+{
+    parent::afterCreate($record);
 
+    Permission::create([
+        'name' => 'edit_' . Str::slug($record->name),
+        'label' => 'Edit ' . $record->name,
+    ]);
+}
+
+public static function afterUpdate($record): void
+{
+    parent::afterUpdate($record);
+
+    Permission::updateOrCreate(
+        ['name' => 'edit_' . Str::slug($record->name)],
+        ['label' => 'Edit ' . $record->name]
+    );
+}
+
+public static function afterDelete($record): void
+{
+    parent::afterDelete($record);
+
+    Permission::where('name', 'edit_' . Str::slug($record->name))->delete();
+}
 }

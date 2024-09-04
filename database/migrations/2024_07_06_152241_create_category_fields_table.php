@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->foreignId('field_type_id')->constrained()->onDelete('cascade');
+            $table->json('type_specific_config')->nullable();
             $table->string('name');
             $table->string('slug')->unique();
             $table->json('options')->nullable();
@@ -31,6 +32,9 @@ return new class extends Migration
             $table->text('help_text')->nullable();
             $table->boolean('is_unique')->default(false);
             $table->json('validation_rules')->nullable();
+            $table->json('conditional_logic')->nullable();
+            $table->integer('column_span')->default(6);
+            $table->json('js_events')->nullable();
             $table->string('default_value')->nullable();
             $table->integer('order')->default(0);
             $table->timestamps();

@@ -11,21 +11,19 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('languages', function (Blueprint $table) {
+        Schema::create('permissions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('code', 2)->unique();
-            $table->string('icon')->default('heroicon-o-flag');
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_default')->default(false);
+            $table->string('label')->nullable();
             $table->timestamps();
         });
     }
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('languages');
+        Schema::dropIfExists('permissions');
     }
 };

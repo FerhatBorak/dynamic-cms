@@ -13,13 +13,7 @@ class LanguageSeeder extends Seeder
             'name' => 'Türkçe',
             'code' => 'tr',
             'icon' => 'heroicon-o-flag', // Heroicon kullanıyoruz
-            'is_active' => true,
-        ]);
-
-        Language::create([
-            'name' => 'English',
-            'code' => 'en',
-            'icon' => 'heroicon-o-flag', // Heroicon kullanıyoruz
+            'is_default' => 1, // Heroicon kullanıyoruz
             'is_active' => true,
         ]);
     }

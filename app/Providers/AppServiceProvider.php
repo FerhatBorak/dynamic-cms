@@ -6,10 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use Filament\Panel; // Bu satırı ekleyin
 use Filament\Facades\Filament; // Bu satırı da ekleyin
 use App\Models\Language;
+use App\Models\SiteSetting;
 use App\Observers\LanguageObserver;
+use App\Observers\SiteSettingObserver;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Support\Facades\Route;
-use App\Services\SiteSettingsService;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -17,9 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SiteSettingsService::class, function ($app) {
-            return new SiteSettingsService();
-        });
+        //
     }
 
     /**
@@ -30,9 +29,8 @@ class AppServiceProvider extends ServiceProvider
         require_once app_path('Helpers/ContentHelper.php');
         require_once app_path('Helpers/LanguageHelper.php');
         require_once app_path('Helpers/CategoryHelper.php');
-        view()->composer('*', function ($view) {
-            $view->with('siteSettings', app(SiteSettingsService::class));
-        });
+        require_once app_path('Helpers/SiteSettingHelper.php');
+
         Route::middleware([HandleCors::class]);
 
         Filament::serving(function () {
@@ -43,6 +41,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Language::observe(LanguageObserver::class);
-
+        SiteSetting::observe(SiteSettingObserver::class);
     }
 }

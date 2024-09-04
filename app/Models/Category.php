@@ -17,10 +17,6 @@ class Category extends Model
         return $this->hasMany(CategoryTranslation::class);
     }
 
-    public function fields()
-    {
-        return $this->hasMany(CategoryField::class);
-    }
 
     protected static function boot()
     {
@@ -38,8 +34,8 @@ class Category extends Model
     {
         return $this->hasMany(Content::class);
     }
-    public function users()
+    public function fields()
 {
-    return $this->belongsToMany(User::class);
+    return $this->hasMany(CategoryField::class)->orderBy('order');
 }
 }

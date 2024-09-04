@@ -5,7 +5,7 @@ return [
     App\Providers\Filament\AdminPanelProvider::class,
     App\Providers\FilamentServiceProvider::class,
     Filament\FilamentServiceProvider::class,
-    Spatie\Permission\PermissionServiceProvider::class,
+
 
 
 ];

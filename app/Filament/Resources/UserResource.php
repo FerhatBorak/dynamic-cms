@@ -3,22 +3,20 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
-use App\Models\Category;
 use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Illuminate\Support\Facades\Hash;
-use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use App\Services\SiteSettingsService;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationIcon = 'heroicon-o-user';
 
     public static function form(Form $form): Form
     {
@@ -31,39 +29,36 @@ class UserResource extends Resource
                     ->email()
                     ->required()
                     ->maxLength(255),
+                Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $context): bool => $context === 'create'),
                 Forms\Components\Select::make('roles')
                     ->multiple()
                     ->relationship('roles', 'name')
-                    ->preload()
-                    ->reactive()
-                    ->afterStateUpdated(fn (callable $set) => $set('categories', [])),
-                Forms\Components\TextInput::make('facebook'),
-                Forms\Components\TextInput::make('instagram'),
-                Forms\Components\TextInput::make('twitter'),
-                Forms\Components\TextInput::make('meta_title'),
-                Forms\Components\Textarea::make('meta_description'),
-                Forms\Components\TextInput::make('phone1'),
-                Forms\Components\TextInput::make('phone2'),
-                Forms\Components\CheckboxList::make('categories')
-                    ->options(fn () => Category::pluck('name', 'id')->toArray())
-                    ->columns(2)
-                    ->hidden(fn (callable $get) => !in_array('editor', $get('roles') ?? []))
-                    ->dehydrated(fn (callable $get) => in_array('editor', $get('roles') ?? [])),
+                    ->preload(),
             ]);
     }
+    public static function getNavigationGroup(): ?string
+    {
+        return null;
+    }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name'),
                 Tables\Columns\TextColumn::make('email'),
-                Tables\Columns\TextColumn::make('roles.name'),
+                Tables\Columns\TextColumn::make('email_verified_at')
+                    ->dateTime(),
+                Tables\Columns\TagsColumn::make('roles.name'),
             ])
             ->filters([
                 //
@@ -72,9 +67,7 @@ class UserResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
@@ -92,33 +85,5 @@ class UserResource extends Resource
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('System');
-    }
-
-    public static function getNavigationLabel(): string
-    {
-        return __('Users');
-    }
-
-    public static function getModelLabel(): string
-    {
-        return __('User');
-    }
-
-    public static function getPluralModelLabel(): string
-    {
-        return __('Users');
-    }
-
-    public static function afterSave(Model $record, array $data): void
-    {
-        if ($record->hasRole('editor')) {
-            $record->categories()->sync($data['categories'] ?? []);
-            app(SiteSettingsService::class)->refreshCache();
-        }
     }
 }

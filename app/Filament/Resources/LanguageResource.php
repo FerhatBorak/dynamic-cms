@@ -77,7 +77,15 @@ class LanguageResource extends Resource
             //
         ];
     }
+    public static function getNavigationGroup(): ?string
+    {
+        return null;
+    }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
     public static function getPages(): array
     {
         return [
