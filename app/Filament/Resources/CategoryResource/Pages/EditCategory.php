@@ -5,6 +5,8 @@ namespace App\Filament\Resources\CategoryResource\Pages;
 use App\Filament\Resources\CategoryResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use App\Models\Category;
+use App\Models\FieldType;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 
@@ -18,7 +20,6 @@ class EditCategory extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
-
     public function save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true): void
     {
         $data = $this->form->getState();
@@ -48,6 +49,10 @@ class EditCategory extends EditRecord
                 }
             }
 
+            // Yeni özellikler için ek işlemler
+            $this->handleMetaFields($model, $data);
+            $this->handleCloneFields($model, $data);
+
             $this->callHook('afterSave');
         } catch (\Exception $e) {
             \Log::error('Error in save method: ' . $e->getMessage());
@@ -66,6 +71,67 @@ class EditCategory extends EditRecord
 
         if ($shouldRedirect && ($redirectUrl = $this->getRedirectUrl())) {
             $this->redirect($redirectUrl);
+        }
+    }
+
+    protected function handleMetaFields($model, $data)
+    {
+        if (!empty($data['include_meta'])) {
+            $fieldTypeId = FieldType::where('slug', 'text')->value('id');
+
+            $metaFields = [
+                [
+                    'field_type_id' => $fieldTypeId,
+                    'name' => 'keyword',
+                    'slug' => 'keyword',
+                    'label' => 'Meta keyword',
+                ],
+                [
+                    'field_type_id' => $fieldTypeId,
+                    'name' => 'description',
+                    'slug' => 'description',
+                    'label' => 'Meta description',
+                ],
+            ];
+
+            foreach ($metaFields as $field) {
+                $model->fields()->updateOrCreate(
+                    ['slug' => $field['slug']],
+                    $field
+                );
+            }
+        }
+    }
+
+    protected function handleCloneFields($category): void
+    {
+        if (!empty($this->data['clone_from_category'])) {
+            $sourceCategory = Category::findOrFail($this->data['clone_from_category']);
+
+            // Hedef kategorinin mevcut alanlarını sil
+            $category->fields()->delete();
+
+            // Kaynak kategorinin alanlarını kopyala
+            foreach ($sourceCategory->fields as $field) {
+                $newField = $field->replicate();
+                $newField->category_id = $category->id;
+
+                // Aynı slug'a sahip alan var mı kontrol et
+                $slug = $newField->slug;
+                $counter = 1;
+                while ($category->fields()->where('slug', $slug)->exists()) {
+                    $slug = $field->slug . '_' . $counter;
+                    $counter++;
+                }
+                $newField->slug = $slug;
+
+                $newField->save();
+            }
+
+            Notification::make()
+                ->title('Kategori alanları başarıyla kopyalandı')
+                ->success()
+                ->send();
         }
     }
 

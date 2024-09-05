@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
+
 use Illuminate\Database\Eloquent\Builder;
 
 
@@ -43,6 +45,14 @@ class CategoryField extends Model
     public function fieldType()
     {
         return $this->belongsTo(FieldType::class);
+    }
+    public static function uniqueSlugRule($categoryId, $ignoreId = null)
+    {
+        return Rule::unique('category_fields', 'slug')
+            ->where(function ($query) use ($categoryId) {
+                return $query->where('category_id', $categoryId);
+            })
+            ->ignore($ignoreId);
     }
     protected static function boot()
     {

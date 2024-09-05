@@ -4,14 +4,16 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CategoryResource\Pages;
 use App\Models\Category;
+use App\Models\CategoryField;
 use App\Models\FieldType;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 use App\Models\Permission;
 use App\Models\Language;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -36,58 +38,18 @@ class CategoryResource extends Resource
 
         return $form
             ->schema([
-                Forms\Components\Select::make('copy_fields_from')
-                ->label('Alanları kopyala')
-                ->options(Category::pluck('name', 'id'))
-                ->reactive()
-                ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                    if ($state) {
-                        $sourceCategory = Category::with('fields')->find($state);
-                        if ($sourceCategory) {
-                            $fields = $sourceCategory->fields->map(function ($field) {
-                                return [
-                                    'field_type_id' => $field->field_type_id,
-                                    'name' => $field->name,
-                                    'slug' => $field->slug,
-                                    'label' => $field->label,
-                                    'is_required' => $field->is_required,
-                                    'validation_rules' => $field->validation_rules,
-                                    'order' => $field->order,
-                                    'type_specific_config' => $field->type_specific_config,
-                                ];
-                            })->toArray();
-
-                            $set('fields', $fields);
-                        }
-                    }
-                }),
-                Forms\Components\Checkbox::make('include_meta_fields')
-                ->label('Meta\'ları dahil et')
-                ->reactive()
-                ->afterStateUpdated(function (Set $set, Get $get, $state) {
-                    if ($state) {
-                        $textFieldType = FieldType::where('slug', 'text')->first();
-                        $currentFields = $get('fields') ?? [];
-
-                        $metaKeywords = [
-                            'field_type_id' => $textFieldType->id,
-                            'name' => 'keyword',
-                            'slug' => 'keyword',
-                            'label' => 'Meta Keywords',
-                        ];
-
-                        $metaDescription = [
-                            'field_type_id' => $textFieldType->id,
-                            'name' => 'description',
-                            'slug' => 'description',
-                            'label' => 'Meta Description',
-                        ];
-
-                        $set('fields', array_merge($currentFields, [$metaKeywords, $metaDescription]));
-                    }
-                }),
                 Forms\Components\Hidden::make('name'),
                 Forms\Components\Hidden::make('slug'),
+                Forms\Components\Checkbox::make('include_meta')
+                ->label('Meta\'ları dahil et'),
+
+                Forms\Components\Select::make('clone_from_category')
+                ->label('Alanları Kopyalanacak Kategori')
+                ->options(Category::pluck('name', 'id'))
+                ->searchable()
+                ->placeholder('Kategori seçin (isteğe bağlı)')
+                ->helperText('Seçilen kategorinin alanları bu kategoriye kopyalanacaktır.'),
+
                 Forms\Components\Tabs::make('Category')
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Basic Information')
@@ -139,8 +101,16 @@ class CategoryResource extends Resource
                                                 $set('slug', Str::slug($state));
                                             })
                                             ->live(onBlur: true),
-                                        Forms\Components\TextInput::make('slug')
-                                            ->required(),
+                                            Forms\Components\TextInput::make('slug')
+                                            ->required()
+                                            ->unique(
+                                                CategoryField::class,
+                                                'slug',
+                                                ignoreRecord: true,
+                                                modifyRuleUsing: function (Unique $rule, Get $get) {
+                                                    return $rule->where('category_id', $get('../../id'));
+                                                }
+                                            ),
                                         Forms\Components\TextInput::make('label')
                                             ->required(),
                                         Forms\Components\Textarea::make('help_text'),
@@ -171,6 +141,7 @@ class CategoryResource extends Resource
                     ->columnSpanFull(),
             ]);
     }
+
 
 
     public static function table(Table $table): Table
@@ -294,11 +265,11 @@ class CategoryResource extends Resource
 
         return $options;
     }
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->hasRole('super_admin');
-    }
-    protected function afterSave()
+public static function shouldRegisterNavigation(): bool
+{
+    return auth()->user()->hasRole('super_admin');
+}
+protected function afterSave()
 {
     $category = $this->record;
 
@@ -316,6 +287,54 @@ class CategoryResource extends Resource
                 $fieldData
             );
         }
+    }
+
+    // Yeni özellik: Meta alanlarını ekle
+    if (!empty($this->data['include_meta'])) {
+        $this->addMetaFields($category);
+    }
+
+    // Yeni özellik: Seçilen kategoriden alanları kopyala
+    if (!empty($this->data['clone_from_category'])) {
+        $this->handleCloneFields($category);
+    }
+}
+
+protected function addMetaFields($category)
+{
+    $fieldTypeId = FieldType::where('slug', 'text')->value('id');
+
+    $metaFields = [
+        [
+            'field_type_id' => $fieldTypeId,
+            'name' => 'keyword',
+            'slug' => 'keyword',
+            'label' => 'Meta keyword',
+        ],
+        [
+            'field_type_id' => $fieldTypeId,
+            'name' => 'description',
+            'slug' => 'description',
+            'label' => 'Meta description',
+        ],
+    ];
+
+    foreach ($metaFields as $field) {
+        $category->fields()->updateOrCreate(
+            ['slug' => $field['slug']],
+            $field
+        );
+    }
+}
+
+protected function cloneFieldsFromCategory($category, $sourceCategoryId)
+{
+    $sourceCategory = Category::findOrFail($sourceCategoryId);
+    foreach ($sourceCategory->fields as $field) {
+        $category->fields()->updateOrCreate(
+            ['slug' => $field['slug']],
+            $field->toArray()
+        );
     }
 }
 public static function afterCreate($record): void

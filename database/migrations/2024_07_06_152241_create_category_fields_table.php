@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('field_type_id')->constrained()->onDelete('cascade');
             $table->json('type_specific_config')->nullable();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->json('options')->nullable();
             $table->boolean('is_required')->default(false);
             $table->integer('min_length')->nullable();
