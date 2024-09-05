@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Role;
+use Illuminate\Support\Str;
 use App\Models\Permission;
 use App\Models\User;
 use App\Models\Category;
@@ -37,9 +38,12 @@ class RolesAndPermissionsSeeder extends Seeder
         // Kategorileri oluştur ve içerik editörü izinlerini ata
         $categories = ['Blog', 'Haberler', 'Ürünler'];
         foreach ($categories as $category) {
-            $cat = Category::create(['name' => $category, 'slug' => \Illuminate\Support\Str::slug($category)]);
-            $permission = Permission::create(['name' => 'edit_' . $cat->slug, 'label' => 'Edit ' . $category]);
-            $contentEditor->permissions()->attach($permission);
+            $cat = Category::firstOrCreate(['name' => $category, 'slug' => Str::slug($category)]);
+            $permission = Permission::firstOrCreate([
+                'name' => 'edit_' . $cat->slug,
+                'label' => 'Edit ' . $category
+            ]);
+            $contentEditor->permissions()->syncWithoutDetaching([$permission->id]);
         }
 
         // Örnek kullanıcılar oluştur

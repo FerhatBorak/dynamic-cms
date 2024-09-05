@@ -8,7 +8,6 @@ use App\Models\CategoryField;
 use App\Models\FieldType;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
-
 use App\Models\Permission;
 use App\Models\Language;
 use Filament\Forms;
@@ -298,8 +297,13 @@ protected function afterSave()
     if (!empty($this->data['clone_from_category'])) {
         $this->handleCloneFields($category);
     }
-}
 
+    // Kategori izinlerini güncelle
+    Permission::updateOrCreate(
+        ['name' => 'edit_' . Str::slug($category->name)],
+        ['label' => 'Edit ' . $category->name]
+    );
+}
 protected function addMetaFields($category)
 {
     $fieldTypeId = FieldType::where('slug', 'text')->value('id');
@@ -337,30 +341,5 @@ protected function cloneFieldsFromCategory($category, $sourceCategoryId)
         );
     }
 }
-public static function afterCreate($record): void
-{
-    parent::afterCreate($record);
 
-    Permission::create([
-        'name' => 'edit_' . Str::slug($record->name),
-        'label' => 'Edit ' . $record->name,
-    ]);
-}
-
-public static function afterUpdate($record): void
-{
-    parent::afterUpdate($record);
-
-    Permission::updateOrCreate(
-        ['name' => 'edit_' . Str::slug($record->name)],
-        ['label' => 'Edit ' . $record->name]
-    );
-}
-
-public static function afterDelete($record): void
-{
-    parent::afterDelete($record);
-
-    Permission::where('name', 'edit_' . Str::slug($record->name))->delete();
-}
 }

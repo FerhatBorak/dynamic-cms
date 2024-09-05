@@ -5,6 +5,8 @@ namespace App\Filament\Resources\CategoryResource\Pages;
 use App\Filament\Resources\CategoryResource;
 use Filament\Resources\Pages\CreateRecord;
 use App\Models\Category;
+use Illuminate\Support\Str;
+use App\Models\Permission;
 use App\Models\FieldType;
 use Filament\Notifications\Notification;
 
@@ -21,6 +23,10 @@ class CreateCategory extends CreateRecord
     protected function afterCreate(): void
     {
         $category = $this->record;
+        Permission::create(
+            ['name' => 'edit_' . Str::slug($category->name),'label' => 'Edit ' . $category->name],
+
+        );
 
         $this->handleTranslations($category);
         $this->handleMetaFields($category);

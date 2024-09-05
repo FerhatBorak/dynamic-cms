@@ -14,13 +14,15 @@ class Permission extends Model
         return $this->belongsToMany(Role::class);
     }
 
-    public function scopeActiveCategories(Builder $query)
-    {
-        $activeCategorySlugs = Category::pluck('slug')->map(fn($slug) => 'edit_' . $slug)->toArray();
+// app/Models/Permission.php
 
-        return $query->where(function($q) use ($activeCategorySlugs) {
-            $q->whereIn('name', $activeCategorySlugs)
-              ->orWhere('name', 'not like', 'edit_%'); // Diğer izinleri de dahil et
-        });
-    }
+public function scopeActiveCategories(Builder $query)
+{
+    $activeCategorySlugs = Category::pluck('slug')->map(fn($slug) => 'edit_' . $slug)->toArray();
+
+    return $query->where(function($q) use ($activeCategorySlugs) {
+        $q->whereIn('name', $activeCategorySlugs)
+          ->orWhere('name', 'not like', 'edit_%'); // Diğer izinleri de dahil et
+    });
+}
 }

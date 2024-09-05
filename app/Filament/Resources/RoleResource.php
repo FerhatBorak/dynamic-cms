@@ -4,12 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RoleResource\Pages;
 use App\Models\Role;
+use App\Models\Category;
 use App\Models\Permission;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -28,7 +30,7 @@ class RoleResource extends Resource
                     ->maxLength(255),
                 Forms\Components\TextInput::make('label')
                     ->maxLength(255),
-                Forms\Components\CheckboxList::make('permissions')
+                    Forms\Components\CheckboxList::make('permissions')
                     ->relationship('permissions', 'label')
                     ->options(function () {
                         return Permission::activeCategories()->pluck('label', 'id');

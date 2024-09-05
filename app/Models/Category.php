@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
@@ -28,6 +29,19 @@ class Category extends Model
 
         static::saved(function ($category) {
             \Log::info('Saved Category:', $category->toArray());
+        });
+        static::deleting(function ($category) {
+            \Log::info("Kategori siliniyor: {$category->name}");
+
+            $permissionName = 'edit_' . Str::slug($category->name);
+            $permission = Permission::where('name', $permissionName)->first();
+
+            if ($permission) {
+                $permission->delete();
+                \Log::info("İlgili yetki silindi: {$permissionName}");
+            } else {
+                \Log::info("İlgili yetki bulunamadı: {$permissionName}");
+            }
         });
     }
     public function contents():HasMany

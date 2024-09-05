@@ -1,14 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-@foreach(get_category_items('blog') as $item)
+@foreach(get_category_items('egitim-gruplari') as $item)
     <h2>{{ $item->title }}</h2>
-    @if(isset($item->body))
-        <p>{{ $item->body }}</p>
+    @if(isset($item->keywords))
+        <p>{{ $item->description }}</p>
     @endif
-                @php
-                    dd(site_setting);
-                @endphp
+
 
         <img src="{{ $item->image }}" alt="{{ $item->title }}">
 
