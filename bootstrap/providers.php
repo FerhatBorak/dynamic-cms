@@ -5,7 +5,4 @@ return [
     App\Providers\Filament\AdminPanelProvider::class,
     App\Providers\FilamentServiceProvider::class,
     Filament\FilamentServiceProvider::class,
-
-
-
 ];
