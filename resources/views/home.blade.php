@@ -1,11 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-@foreach(get_category_items('egitim-gruplari') as $item)
+@foreach(get_category_items('blog') as $item)
     <h2>{{ $item->title }}</h2>
-    @if(isset($item->keywords))
+    <h2>{{ $item->body }}</h2>
+    {{ $item->keywords }}
         <p>{{ $item->description }}</p>
-    @endif
+
 
 
         <img src="{{ $item->image }}" alt="{{ $item->title }}">
@@ -13,4 +14,15 @@
     <a href="{{ url($item->slug) }}">Devamını oku</a>
 @endforeach
 {{ site_setting('title') }}
+
+
+@php
+    dd(get_homepage('rakamlar')->en->num1)
+@endphp
+
+
+<section id="services">
+    <h2></h2>
+</section>
+
 @endsection

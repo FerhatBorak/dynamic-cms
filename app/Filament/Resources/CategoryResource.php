@@ -47,7 +47,10 @@ class CategoryResource extends Resource
                 ->searchable()
                 ->placeholder('Kategori seçin (isteğe bağlı)')
                 ->helperText('Seçilen kategorinin alanları bu kategoriye kopyalanacaktır.'),
-
+                Forms\Components\Select::make('parent_id')
+                ->label('Parent Category')
+                ->options(Category::pluck('name', 'id'))
+                ->nullable(),
                 Forms\Components\Tabs::make('Category')
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Basic Information')

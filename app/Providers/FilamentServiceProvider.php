@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Category;
 use Filament\Facades\Filament;
 use Filament\Navigation\NavigationItem;
+use Filament\Navigation\NavigationGroup;
 use Illuminate\Support\ServiceProvider;
 use App\Filament\Resources\CategoryResource;
 use App\Filament\Resources\LanguageResource;
@@ -38,6 +39,7 @@ class FilamentServiceProvider extends ServiceProvider
                 ->icon('heroicon-o-home')
                 ->url('/admin'),
         ]);
+
         if ($user->hasPermission('manage_site_fields')) {
             Filament::registerNavigationItems([
                 NavigationItem::make('Site Fields')
@@ -55,6 +57,7 @@ class FilamentServiceProvider extends ServiceProvider
                     ->group('Yönetim'),
             ]);
         }
+
         if ($isSuperAdmin) {
             Filament::registerNavigationItems([
                 NavigationItem::make('Category')
@@ -76,21 +79,39 @@ class FilamentServiceProvider extends ServiceProvider
             ]);
         }
 
-        $categories = Category::with('translations')->get();
+        $this->registerCategoryNavigationItems($user, $isSuperAdmin);
+    }
 
-        $categoryItems = [];
+    protected function registerCategoryNavigationItems($user, $isSuperAdmin): void
+    {
+        $categories = Category::with('translations', 'children')->whereNull('parent_id')->get();
+
         foreach ($categories as $category) {
             if ($isSuperAdmin || $user->hasPermission('edit_' . $category->slug)) {
-                $categoryItems[] = NavigationItem::make($category->name)
+                $categoryItem = NavigationItem::make($category->name)
                     ->icon('heroicon-o-document-text')
                     ->url(ContentResource::getUrl('index', ['category' => $category->id]))
                     ->group('İçerikler');
 
+                $this->addSubcategories($categoryItem, $category, $user, $isSuperAdmin);
+
+                Filament::registerNavigationItems([$categoryItem]);
             }
         }
+    }
 
-        if (!empty($categoryItems)) {
-            Filament::registerNavigationItems($categoryItems);
+    protected function addSubcategories(NavigationItem $parentItem, Category $parentCategory, $user, $isSuperAdmin): void
+    {
+        foreach ($parentCategory->children as $childCategory) {
+            if ($isSuperAdmin || $user->hasPermission('edit_' . $childCategory->slug)) {
+                $childItem = NavigationItem::make($childCategory->name)
+                    ->icon('heroicon-o-document')
+                    ->url(ContentResource::getUrl('index', ['category' => $childCategory->id]));
+
+                $parentItem->childItems([$childItem]);
+
+                $this->addSubcategories($childItem, $childCategory, $user, $isSuperAdmin);
+            }
         }
     }
 }

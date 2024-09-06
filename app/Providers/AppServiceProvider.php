@@ -26,10 +26,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        require_once app_path('Helpers/SiteSettingHelper.php');
+        require_once app_path('Helpers/HomepageHelper.php');
         require_once app_path('Helpers/ContentHelper.php');
         require_once app_path('Helpers/LanguageHelper.php');
         require_once app_path('Helpers/CategoryHelper.php');
-        require_once app_path('Helpers/SiteSettingHelper.php');
+
+
 
         Route::middleware([HandleCors::class]);
 

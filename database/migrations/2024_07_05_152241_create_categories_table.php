@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->foreign('parent_id')->references('id')->on('categories')->onDelete('set null');
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
