@@ -54,12 +54,10 @@ class HomepageSectionResource extends Resource
                             Forms\Components\Select::make('column_span')
                             ->label('Genişlik')
                             ->options([
-                                3 => '1/4 Width',
-                                4 => '1/3 Width',
-                                6 => '1/2 Width',
-                                8 => '2/3 Width',
-                                9 => '3/4 Width',
-                                12 => 'Full Width',
+                                'full' => 'Tam Genişlik',
+                                '1/2' => 'Yarım Genişlik',
+                                '1/3' => 'Üçte Bir Genişlik',
+                                '2/3' => 'Üçte İki Genişlik',
                             ])
                             ->default('full')
                             ->required(),
@@ -68,6 +66,10 @@ class HomepageSectionResource extends Resource
             ]);
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+    return auth()->user()->hasRole('super_admin');
+    }
 
     public static function table(Table $table): Table
     {

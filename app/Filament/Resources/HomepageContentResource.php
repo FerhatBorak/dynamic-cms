@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,22 +39,31 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
                             return $languages->map(function ($language) use ($section) {
                                 return Forms\Components\Tabs\Tab::make($language->name)
-                                    ->schema(
-                                        $section->fields->map(function ($field) use ($language) {
-                                            $componentClass = match ($field->type) {
-                                                'text' => Forms\Components\TextInput::class,
-                                                'textarea' => Forms\Components\Textarea::class,
-                                                'rich_text' => Forms\Components\RichEditor::class,
-                                                'image' => Forms\Components\FileUpload::class,
-                                                'link' => Forms\Components\TextInput::class,
-                                                default => Forms\Components\TextInput::class,
-                                            };
+                                    ->schema([
+                                        Forms\Components\Grid::make(12)
+                                            ->schema(
+                                                $section->fields->map(function ($field) use ($language) {
+                                                    $componentClass = match ($field->type) {
+                                                        'text' => Forms\Components\TextInput::class,
+                                                        'textarea' => Forms\Components\Textarea::class,
+                                                        'rich_text' => Forms\Components\RichEditor::class,
+                                                        'image' => Forms\Components\FileUpload::class,
+                                                        'link' => Forms\Components\TextInput::class,
+                                                        default => Forms\Components\TextInput::class,
+                                                    };
 
-                                            return $componentClass::make("content.{$language->code}.{$field->slug}")
-                                                ->label($field->name)
-                                                ->columnSpan($field->column_span);
-                                        })->toArray()
-                                    );
+                                                    return $componentClass::make("content.{$language->code}.{$field->slug}")
+                                                        ->label($field->name)
+                                                        ->columnSpan(match ($field->column_span) {
+                                                            'full' => 12,
+                                                            '1/2' => 6,
+                                                            '1/3' => 4,
+                                                            '2/3' => 8,
+                                                            default => 12,
+                                                        });
+                                                })->toArray()
+                                            )
+                                    ]);
                             })->toArray();
                         })
                         ->columnSpanFull(),
@@ -78,7 +88,12 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
                 ])
                 ->actions([
                     Tables\Actions\EditAction::make()
-                        ->label(fn ($record) => "Düzenle"),
+                        ->label(fn ($record) => "İçeriği Düzenle"),
+                    Action::make('editFields')
+                        ->label('Alanları Düzenle')
+                        ->url(fn ($record) => HomepageSectionResource::getUrl('edit', ['record' => $record->homepage_section_id]))
+                        ->icon('heroicon-o-folder')
+                        ->visible(fn () => auth()->user()->hasRole('super_admin'))
                 ]);
         }
 
@@ -88,7 +103,6 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
                 //
             ];
         }
-
         public static function getPages(): array
         {
             return [
@@ -96,7 +110,6 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
                 'edit' => Pages\EditHomepageContent::route('/{record}/edit'),
             ];
         }
-
         public static function canCreate(): bool
         {
             return auth()->user()->hasRole('admin');

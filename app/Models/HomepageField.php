@@ -9,8 +9,14 @@ class HomepageField extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['homepage_section_id', 'name', 'slug', 'type', 'options'];
-
+    protected $fillable = [
+        'homepage_section_id',
+        'name',
+        'slug',
+        'type',
+        'column_span', // Bunu ekleyin
+        'options'
+    ];
     protected $casts = [
         'options' => 'array',
     ];

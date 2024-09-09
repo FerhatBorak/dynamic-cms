@@ -14,10 +14,10 @@ class ListHomepageContents extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('create')
+            Action::make('createSection')
                 ->label('Yeni Anasayfa Bölümü')
                 ->url(HomepageSectionResource::getUrl('create'))
-                ->visible(fn () => auth()->user()->hasRole('admin')),
+                ->visible(fn () => auth()->user()->hasRole('super_admin')),
         ];
     }
 }

@@ -14,6 +14,7 @@ class CreateHomepageFieldsTable extends Migration
             $table->string('name');
             $table->string('slug');
             $table->string('type');
+            $table->string('column_span')->default('full');
             $table->json('options')->nullable();
             $table->timestamps();
         });

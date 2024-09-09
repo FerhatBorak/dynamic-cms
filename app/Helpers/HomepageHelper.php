@@ -2,40 +2,30 @@
 
 use App\Models\HomepageSection;
 use App\Models\HomepageContent;
+use App\Presenters\HomepageContentPresenter;
 
 if (!function_exists('get_homepage')) {
     function get_homepage($sectionSlug, $languageCode = null)
     {
-        $languageCode = $languageCode ?? app()->getLocale();
+        $currentLanguage = $languageCode ?? current_language()->code;
 
         $section = HomepageSection::where('slug', $sectionSlug)->first();
+        if (!$section) {
+            return null;
+        }
 
-        if (!$section) return null;
+        $content = HomepageContent::where('homepage_section_id', $section->id)->first();
+        if (!$content) {
+            return null;
+        }
 
-        $content = HomepageContent::where('homepage_section_id', $section->id)
-            ->where('language_code', $languageCode)
-            ->first();
+        // Eğer belirtilen dilde içerik yoksa, varsayılan dili kullan
+        $contentData = $content->content[$currentLanguage] ?? $content->content[config('app.fallback_locale')] ?? null;
 
+        if (!$contentData) {
+            return null;
+        }
 
-        if (!$content) return null;
-
-        return new class($content->content) {
-            public $data;
-
-            public function __construct($data)
-            {
-                $this->data = $data;
-            }
-
-            public function __get($name)
-            {
-                return $this->data[$name] ?? null;
-            }
-
-            public function toArray()
-            {
-                return $this->data;
-            }
-        };
+        return new HomepageContentPresenter($content, $currentLanguage);
     }
 }

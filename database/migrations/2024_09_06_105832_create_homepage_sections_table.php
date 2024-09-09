@@ -12,7 +12,7 @@ class CreateHomepageSectionsTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->integer('column_span')->default(12);
+
             $table->timestamps();
         });
     }
